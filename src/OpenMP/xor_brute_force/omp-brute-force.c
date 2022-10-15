@@ -163,6 +163,8 @@ int main( int argc, char *argv[] )
     char* out = NULL; /* where to put the decrypted message */
     int flag = 0;
     int key_found = 0;
+    double tstart, tstop;
+    tstart = omp_get_wtime();
 
     # pragma omp parallel default(none) private(key, k) shared(msglen, CHECK_LEN, check, flag, key_found, KEY_LEN, enc, out)
     {
@@ -185,6 +187,9 @@ int main( int argc, char *argv[] )
         }
       }
     }
+    tstop = omp_get_wtime();
+    printf("Took %f\n", tstop - tstart);
+    
     if (flag == 1) {
       printf("Key found! %08d\n", key_found);
       printf("%s\n", out);
