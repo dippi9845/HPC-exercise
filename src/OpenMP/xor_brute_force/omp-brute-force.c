@@ -18,6 +18,10 @@
  *
  ****************************************************************************/
 
+/**
+ * Implementation: Filippo Di Pietro
+ */
+
 /***
 % HPC - Brute-force password cracking
 % Moreno Marzolla <moreno.marzolla@unibo.it>
@@ -156,19 +160,37 @@ int main( int argc, char *argv[] )
     /* How to use a key to decrypt the message */
     char key[KEY_LEN+1]; /* sprintf will output the trailing \0, so we need one byte more for the key */
     int k = 132; /* numeric value of the key to try */
-    char* out = (char*)malloc(msglen); /* where to put the decrypted message */
+    char* out = NULL; /* where to put the decrypted message */
+    int flag = 0;
+    int key_found = 0;
 
-    assert(out != NULL);
-    snprintf(key, KEY_LEN+1, "%08d", k);
-    xorcrypt(enc, out, msglen, key, KEY_LEN);
-    /* `out` contains the decrypted text; if the key is not corret,
-       `out` will contain random garbage */
-    if ( 0 == memcmp(out, check, CHECK_LEN) ) {
-        printf("Key found: %s\n", key);
-        printf("Decrypted message: %s\n", out);
-    } else {
-        printf("Key %s not valid\n", key);
+    # pragma omp parallel default(none) private(key, k) shared(msglen, CHECK_LEN, check, flag, key_found, KEY_LEN, enc, out)
+    {
+      char* my_out = (char*)malloc(msglen); assert(my_out != NULL);
+      int my_start = omp_get_thread_num();
+      int my_step = omp_get_num_threads();
+      int my_end = 99999999;
+      /*
+        evaluete starting key and step
+      */
+      for (k = my_start; k <= my_end && flag == 0; k += my_step) {
+        snprintf(key, KEY_LEN+1, "%08d", k);
+        xorcrypt(enc, my_out, msglen, key, KEY_LEN);
+
+        if (memcmp(my_out, check, CHECK_LEN) == 0) {
+            flag = 1;
+            key_found = k;
+            out = my_out;
+            break;
+        }
+      }
     }
-    free(out);
+    if (flag == 1) {
+      printf("Key found! %08d\n", key_found);
+      printf("%s\n", out);
+    }
+    else {
+      printf("Key not found!\n");
+    }
     return EXIT_SUCCESS;
 }
