@@ -106,9 +106,17 @@ int dot(const int *v1, const int *v2, size_t n)
     
     int result = 0;
     #pragma omp parallel default(none) shared(v1, v2, n) reduction(+:result)
-        for (int i = 0; i < n; i++) {
+    {
+        int P = omp_get_num_threads();
+        int my_id = omp_get_thread_num();
+
+        int my_start = (n * my_id) / P;
+        int my_end = (n * (my_id + 1)) / P;
+        
+        for (int i = my_start; i < my_end; i++) {
             result += v1[i] * v2[i];
         }
+    }
     return result;
 }
 
