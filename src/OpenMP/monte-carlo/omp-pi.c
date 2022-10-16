@@ -108,7 +108,10 @@ unsigned int generate_points( unsigned int n )
     #pragma omp parallel default(none) shared(n) private(i) reduction(+:n_inside)
     {
         unsigned int my_seed = 17 + 19*omp_get_thread_num();
-        for (i = 0; i < n; i++) {
+        unsigned int my_start = omp_get_thread_num();
+        unsigned int my_step = omp_get_num_threads();
+
+        for (i = my_start; i < n; i += my_step) {
             /* Generate two random values in the range [-1, 1] */
             const double x = (2.0 * rand_r(&my_seed)/(double)RAND_MAX) - 1.0;
             const double y = (2.0 * rand_r(&my_seed)/(double)RAND_MAX) - 1.0;
