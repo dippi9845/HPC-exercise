@@ -113,21 +113,29 @@ int make_hist( const char *text, int hist[26] )
 {
     int nlet = 0; /* total number of alphabetic characters processed */
     int i, j;
-    /* [TODO] Parallelize this function */
 
     /* Reset the histogram */
     for (j=0; j<26; j++) {
         hist[j] = 0;
     }
-    /* Count occurrences */
-    for (i=0; i<strlen(text); i++) {
-        const char c = text[i];
-        if (isalpha(c)) {
-            nlet++;
-            hist[ tolower(c) - 'a' ]++;
+
+    #pragma omp parallel default(none) shared(text, j, hist) private(i) reduction(+:nlet)
+    {
+        int P = omp_get_num_threads();
+        int my_id = omp_get_thread_num();
+
+        int my_start = ( strlen(text) * my_id ) / P;
+        int my_end = ( strlen(text) * (my_id + 1) ) / P;
+        /* Count occurrences */
+        for (i = my_start; i < my_end; i++) {
+            const char c = text[i];
+            if (isalpha(c)) {
+                nlet++;
+                #pragma omp atomic
+                hist[ tolower(c) - 'a' ]++;
+            }
         }
     }
-
     return nlet;
 }
 
