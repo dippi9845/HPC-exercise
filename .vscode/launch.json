@@ -11,7 +11,7 @@
         "program": "${workspaceFolder}/src/OpenMP/sieve-of-eratosthenes/omp-sieve-slim.out",
         "MIMode": "gdb",
         "cwd": "${workspaceFolder}",
-        "args": ["10000"],
+        "args": ["10"],
         "externalConsole": false,
         "stopAtEntry": false,
         "setupCommands": [
