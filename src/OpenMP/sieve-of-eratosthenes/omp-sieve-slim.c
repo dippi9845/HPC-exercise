@@ -150,6 +150,19 @@ $n$. Use the table to check the correctness of your implementation
 #include <stdlib.h>
 #include <assert.h>
 
+
+int is_prime(char* arr, long index) {
+    char* byte = arr + (index >> 3);
+    char real_index = index & 0x0000000000003;
+    return (*byte) & real_index;
+}
+
+void set_prime(char* arr, long index) {
+    char* byte = arr + (index >> 3);
+    char real_index = ~(index & 0x0000000000003);
+    *byte = *byte & real_index;
+}
+
 /* Mark all mutliples of `k` in the set {`from`, ..., `to`-1}; return
    how many numbers have been marked for the first time. `from` does
    not need to be a multiple of `k`, although in this program it
@@ -157,7 +170,7 @@ $n$. Use the table to check the correctness of your implementation
 long mark( char *isprime, int k, long from, long to )
 {
     long nmarked = 0l;
-    #pragma omp parallel default(none) shared(to, from, k, isprime) reduction(+:nmarked)
+    #pragma omp parallel default(none) num_threads(1) shared(to, from, k, isprime) reduction(+:nmarked)
     {
         const int my_id = omp_get_thread_num();
         const int num_threads = omp_get_num_threads();
@@ -166,9 +179,26 @@ long mark( char *isprime, int k, long from, long to )
         assert(my_from >= 0);
         my_from = ((my_from + k - 1)/k)*k; /* start from the lowest multiple of k that is >= my_from */
         const long my_to = from + (n*(my_id+1))/num_threads;
-        for ( long x=my_from; x<my_to; x+=k ) {
-            if (isprime[x]) {
-                isprime[x] = 0;
+        
+        for ( long x = my_from; x < my_from + 9; x += k ) {
+            #pragma omp critical
+            if (is_prime(isprime, x)) {
+                set_prime(isprime, x);
+                nmarked++;
+            }
+        }
+
+        for ( long x = my_from + 8; x < my_to - 8; x+=k ) {
+            if (is_prime(isprime, x)) {
+                set_prime(isprime, x);
+                nmarked++;
+            }
+        }
+
+        for ( long x = my_to - 8; x < my_to ; x += k ) {
+            #pragma omp critical
+            if (is_prime(isprime, x)) {
+                set_prime(isprime, x);
                 nmarked++;
             }
         }
@@ -194,18 +224,20 @@ int main( int argc, char *argv[] )
         return EXIT_FAILURE;
     }
 */
-    char *isprime = (char*)malloc(n+1); assert(isprime != NULL);
+    char *isprime = (char*)malloc((n >> 3)+1); assert(isprime != NULL);
     /* Initially, all numbers are considered primes */
-    for (i=0; i<=n; i++)
-        isprime[i] = 1;
+    for (i=0; i<=n+1; i++)
+        isprime[i >> 3] = -1;
 
     nprimes = n-1;
+    
 #ifdef _OPENMP
+    omp_set_num_threads(1);
     const double tstart = omp_get_wtime();
 #endif
     /* main iteration of the sieve */
     for (i=2; i*i <= n; i++) {
-        if (isprime[i]) {
+        if (is_prime(isprime, i)) {
             nprimes -= mark(isprime, i, i*i, n+1);
         }
     }
