@@ -233,7 +233,7 @@ int main( int argc, char *argv[] )
         isprime[i >> 3] = -1;
 
     nprimes = n-1;
-    /*
+    
 #ifdef _OPENMP
     omp_set_num_threads(1);
     const double tstart = omp_get_wtime();
@@ -257,12 +257,7 @@ int main( int argc, char *argv[] )
 #endif
     free(isprime);
     printf("There are %ld primes in {2, ..., %ld}\n", nprimes, n);
-    */
+    
 
-    for (int i = 0; i <= n+1; i++){
-        if (is_prime(isprime, i)){
-            set_prime(isprime, i);
-        }
-    }
     return EXIT_SUCCESS;
 }
