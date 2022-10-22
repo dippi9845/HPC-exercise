@@ -137,7 +137,7 @@ $n$. Use the table to check the correctness of your implementation
      10000000                               664579
     100000000                              5761455
    1000000000                             50847534
-  10000000000  **Do not try on the server**: uses >10GB of RAM!!
+  10000000000                            455052511
 -------------  -----------------------------------
 
 ## Files
@@ -153,13 +153,16 @@ $n$. Use the table to check the correctness of your implementation
 
 int is_prime(char* arr, long index) {
     char* byte = arr + (index >> 3);
-    char real_index = index & 0x0000000000003;
+    char real_index = (index & 0x1F) + 1;
+    real_index = 1 << real_index; // con 7 viene cancellato tutto
     return (*byte) & real_index;
 }
 
 void set_prime(char* arr, long index) {
     char* byte = arr + (index >> 3);
-    char real_index = ~(index & 0x0000000000003);
+    char real_index = (index & 0x1F) + 1;
+    real_index = (1 << real_index);
+    real_index = ~real_index;
     *byte = *byte & real_index;
 }
 
@@ -230,12 +233,12 @@ int main( int argc, char *argv[] )
         isprime[i >> 3] = -1;
 
     nprimes = n-1;
-    
+    /*
 #ifdef _OPENMP
     omp_set_num_threads(1);
     const double tstart = omp_get_wtime();
 #endif
-    /* main iteration of the sieve */
+
     for (i=2; i*i <= n; i++) {
         if (is_prime(isprime, i)) {
             nprimes -= mark(isprime, i, i*i, n+1);
@@ -245,7 +248,7 @@ int main( int argc, char *argv[] )
     const double elapsed = omp_get_wtime() - tstart;
     printf("Elapsed time: %f\n", elapsed);
 #endif
-    /* Enable to print the list of primes */
+
 #if 0
     for (i=2; i<=n; i++) {
         if (isprime[i]) {printf("%ld ", i);}
@@ -254,6 +257,12 @@ int main( int argc, char *argv[] )
 #endif
     free(isprime);
     printf("There are %ld primes in {2, ..., %ld}\n", nprimes, n);
+    */
 
+    for (int i = 0; i <= n+1; i++){
+        if (is_prime(isprime, i)){
+            set_prime(isprime, i);
+        }
+    }
     return EXIT_SUCCESS;
 }
